@@ -2,337 +2,638 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HydroAI 1.0 — Smart TV Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroAI 1.0 — Smart TV AI Chat</title>
     <style>
-        /* ============================
-               БАЗОВЫЕ СТИЛИ И СБРОС
-            ============================ */
-        * {
+        /* ============================================================
+               ГЛОБАЛЬНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
+               ============================================================ */
+        :root {
+            /* Основная цветовая палитра */
+            --color-black: #000000;
+            /* Абсолютно чёрный фон чата */
+            --color-charcoal: #1d1d1d;
+            /* Тёмно-серый древесный уголь для сайдбара */
+            --color-gold: #ffcc00;
+            /* Жёлто-золотой акцентный цвет */
+            --color-gold-glow: rgba(255, 204, 0, 0.6);
+            /* Свечение золотого цвета */
+            --color-gold-glow-strong: rgba(255, 204, 0, 0.9);
+            /* Сильное свечение для фокуса */
+            --color-red-pulse: #ff3333;
+            /* Красный цвет для пульсации микрофона */
+            --color-gray-text: #888888;
+            /* Тусклый серый для водяного знака */
+            --color-light-text: #ffffff;
+            /* Белый текст */
+            --color-dark-text: #cccccc;
+            /* Светло-серый текст */
+            --color-user-msg: #e8f0fe;
+            /* Цвет сообщения пользователя */
+            --color-ai-msg: #f5f5f5;
+            /* Цвет сообщения ИИ */
+            --sidebar-width: 30%;
+            /* Ширина боковой панели */
+            --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Плавная анимация */
+            --font-family-main: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            /* Чистый шрифт без засечек */
+            --base-font-size: 16px;
+            /* Базовый размер шрифта */
+            --chat-font-size: 24px;
+            /* Крупный шрифт для чата */
+            --input-font-size: 20px;
+            /* Размер шрифта поля ввода */
+        }
+
+        /* Сброс отступов и базовые стили */
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none; /* запрет выделения для ТВ */
-            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            text-rendering: optimizeLegibility;
         }
 
-        :root {
-            --sidebar-bg: #1d1d1d;
-            --main-bg: #000000;
-            --gold: #ffcc00;
-            --gold-soft: rgba(255, 204, 0, 0.6);
-            --gold-glow: 0 0 20px rgba(255, 204, 0, 0.7), 0 0 50px rgba(255, 204, 0, 0.4);
-            --blue-glow: 0 0 20px rgba(0, 140, 255, 0.8), 0 0 50px rgba(0, 140, 255, 0.4);
-            --text-primary: #f5f5f7;
-            --text-secondary: #a1a1a6;
-            --text-dim: #55555a;
-            --danger: #ff3b30;
-            --transition-speed: 0.25s;
-            --font-large: clamp(24px, 3vw, 38px);
-            --font-medium: clamp(18px, 2vw, 24px);
-            --font-small: clamp(14px, 1.5vw, 18px);
-        }
-
-        html, body {
+        html,
+        body {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background: var(--main-bg);
-            color: var(--text-primary);
+            background: var(--color-black);
+            font-family: var(--font-family-main);
+            font-size: var(--base-font-size);
+            color: var(--color-light-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            user-select: none;
+            /* Запрещаем выделение текста для TV-интерфейса */
         }
 
-        /* ============================
-               ОСНОВНАЯ СЕТКА ПРИЛОЖЕНИЯ
-            ============================ */
+        /* ============================================================
+               ОСНОВНОЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ
+               ============================================================ */
         .app-container {
             display: flex;
             width: 100%;
             height: 100vh;
+            background: var(--color-black);
             position: relative;
-            background: var(--main-bg);
+            transition: all var(--transition-smooth);
         }
 
-        /* ============================
-               ЛЕВАЯ БОКОВАЯ ПАНЕЛЬ (30%)
-            ============================ */
+        /* ============================================================
+               ЛЕВАЯ БОКОВАЯ ПАНЕЛЬ (SIDEBAR)
+               ============================================================ */
         .sidebar {
-            width: 30%;
+            width: var(--sidebar-width);
             min-width: 280px;
-            background: var(--sidebar-bg);
+            max-width: 420px;
+            background: var(--color-charcoal);
             display: flex;
             flex-direction: column;
-            padding: 2.5rem 2rem 2rem 2rem;
-            border-right: 1px solid #2c2c2e;
+            padding: 30px 24px;
             position: relative;
-            z-index: 5;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
             box-shadow: 4px 0 30px rgba(0, 0, 0, 0.5);
         }
 
-        .sidebar-header {
-            margin-bottom: 2.5rem;
+        /* Класс для скрытия сайдбара (нажатие "5") */
+        .sidebar.hidden {
+            width: 0;
+            min-width: 0;
+            max-width: 0;
+            padding: 0;
+            overflow: hidden;
+            border-right: none;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .sidebar-title {
-            font-size: 2.8rem;
+        /* Заголовок "HydroAI" вверху сайдбара */
+        .sidebar-header {
+            font-size: 32px;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            letter-spacing: 0.5px;
+            color: var(--color-light-text);
+            margin-bottom: 40px;
+            text-align: center;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ffffff 30%, #dddddd 70%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
         }
 
-        .sidebar-subtitle {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            font-weight: 400;
-        }
-
-        /* Блок модели */
-        .model-block {
-            margin-top: 0.5rem;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
+        /* Подпись "Модель" */
         .model-label {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            margin-bottom: 1.2rem;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
+            font-size: 14px;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--color-gray-text);
+            margin-bottom: 16px;
+            text-align: center;
         }
 
+        /* Карточка активной модели */
         .model-card {
-            background: rgba(0, 0, 0, 0.03);
-            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid rgba(255, 255, 255, 0.08);
             border-radius: 20px;
-            padding: 2rem 1.8rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 30px 24px;
             text-align: center;
-            transition: all var(--transition-speed) ease;
             cursor: pointer;
-            outline: none;
+            transition: all var(--transition-smooth);
             position: relative;
-            backdrop-filter: blur(10px);
+            outline: none;
+            flex-shrink: 0;
+            /* Базовое свечение для focusable элемента */
+            box-shadow: 0 0 0 transparent;
         }
 
-        /* Фокус для карточки модели через D-pad */
-        .model-card.focusable:focus,
-        .model-card.focusable:focus-visible {
-            border-color: var(--gold);
-            box-shadow: var(--gold-glow);
-            transform: scale(1.03);
-            background: rgba(255, 204, 0, 0.05);
+        /* Стиль при фокусе (для D-pad навигации) */
+        .model-card.focused,
+        .model-card:focus-visible {
+            transform: scale(1.05);
+            border-color: var(--color-gold);
+            box-shadow: 0 0 25px var(--color-gold-glow),
+                0 0 60px rgba(255, 204, 0, 0.25),
+                inset 0 0 20px rgba(255, 204, 0, 0.05);
         }
 
-        .model-icon {
-            margin-bottom: 1.5rem;
-            width: 100px;
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000000;
-            border-radius: 24px;
-            padding: 15px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-            transition: all var(--transition-speed) ease;
+        /* Логотип модели внутри карточки */
+        .model-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            transition: transform var(--transition-smooth);
         }
 
-        .model-icon svg {
-            width: 100%;
-            height: 100%;
-            fill: #000000;
+        .model-card.focused .model-logo {
+            transform: scale(1.1);
         }
 
+        /* Название модели */
         .model-name {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #ffffff;
-            letter-spacing: 0.02em;
-            margin-bottom: 0.6rem;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--color-light-text);
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
         }
 
+        /* Описание модели */
         .model-description {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-weight: 400;
+            font-size: 14px;
+            color: var(--color-gray-text);
             line-height: 1.4;
+            font-weight: 400;
         }
 
-        /* Водяной знак внизу */
-        .watermark {
-            margin-top: auto;
-            padding-top: 1.5rem;
-            font-size: 0.9rem;
-            color: var(--text-dim);
-            letter-spacing: 0.1em;
+        /* Водяной знак внизу сайдбара */
+        .sidebar-watermark {
+            position: absolute;
+            bottom: 24px;
+            left: 0;
+            right: 0;
             text-align: center;
-            font-weight: 300;
+            font-size: 48px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.07);
+            letter-spacing: 4px;
+            pointer-events: none;
+            text-transform: uppercase;
+            user-select: none;
         }
 
-        /* ============================
-               ПРАВАЯ РАБОЧАЯ ОБЛАСТЬ
-            ============================ */
-        .main-area {
+        /* Кнопка смены API-ключа в сайдбаре */
+        .sidebar-api-btn {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            padding: 8px 18px;
+            font-size: 12px;
+            color: var(--color-gray-text);
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            outline: none;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .sidebar-api-btn.focused,
+        .sidebar-api-btn:focus-visible {
+            border-color: var(--color-gold);
+            color: var(--color-gold);
+            box-shadow: 0 0 15px var(--color-gold-glow);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        /* ============================================================
+               ПРАВАЯ ОБЛАСТЬ ЧАТА
+               ============================================================ */
+        .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--main-bg);
+            background: var(--color-black);
             position: relative;
-            padding: 2.5rem 3rem 2rem 3rem;
+            transition: all var(--transition-smooth);
+            min-width: 0;
         }
 
-        /* Область вывода сообщений */
-        .chat-output {
+        /* Область сообщений */
+        .messages-container {
             flex: 1;
             overflow-y: auto;
-            padding: 1rem 0.5rem;
-            font-size: var(--font-medium);
-            line-height: 1.5;
-            color: var(--text-primary);
-            word-break: break-word;
+            padding: 40px 50px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
             scroll-behavior: smooth;
-            mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%);
+            /* Для плавного автоскролла */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 204, 0, 0.3) transparent;
         }
 
-        .chat-output::-webkit-scrollbar {
+        /* Стилизация скроллбара для WebKit-браузеров */
+        .messages-container::-webkit-scrollbar {
             width: 6px;
+        }
+        .messages-container::-webkit-scrollbar-track {
             background: transparent;
         }
-
-        .chat-output::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 10px;
+        .messages-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 204, 0, 0.3);
+            border-radius: 3px;
         }
 
-        /* Сообщения */
-        .message {
-            margin-bottom: 1.5rem;
-            padding: 0.2rem 0;
-            animation: fadeInMessage 0.3s ease;
+        /* Сообщение пользователя */
+        .message-user {
+            align-self: flex-end;
+            max-width: 75%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px 20px 4px 20px;
+            padding: 18px 24px;
+            font-size: var(--chat-font-size);
+            line-height: 1.5;
+            color: var(--color-light-text);
+            word-wrap: break-word;
+            animation: messageIn 0.3s ease-out;
         }
 
-        .message.user {
-            color: #ffffff;
-            font-weight: 400;
-            border-left: 3px solid var(--gold);
-            padding-left: 1.2rem;
-            opacity: 0.95;
+        /* Сообщение ИИ */
+        .message-ai {
+            align-self: flex-start;
+            max-width: 85%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 204, 0, 0.15);
+            border-radius: 20px 20px 20px 4px;
+            padding: 18px 24px;
+            font-size: var(--chat-font-size);
+            line-height: 1.5;
+            color: var(--color-light-text);
+            word-wrap: break-word;
+            animation: messageIn 0.3s ease-out;
+            min-height: 40px;
         }
 
-        .message.ai {
-            color: #e8e8ed;
-            font-weight: 350;
-            padding-left: 0.5rem;
+        /* Анимация появления сообщения */
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
-        @keyframes fadeInMessage {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Мигающий курсор для эффекта печатной машинки */
+        .typing-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.2em;
+            background: var(--color-gold);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 0.8s infinite;
+        }
+        @keyframes cursorBlink {
+            0%,
+            50% {
+                opacity: 1;
+            }
+            51%,
+            100% {
+                opacity: 0;
+            }
         }
 
-        /* Нижняя панель ввода */
-        .input-panel {
+        /* ============================================================
+               НИЖНЯЯ ПАНЕЛЬ ВВОДА (КАПСУЛА + КНОПКА МИКРОФОНА)
+               ============================================================ */
+        .input-area {
             display: flex;
             align-items: center;
-            gap: 1.2rem;
-            padding: 1rem 0 0.5rem 0;
-            margin-top: 1rem;
+            gap: 16px;
+            padding: 20px 40px 30px;
+            transition: all var(--transition-smooth);
+        }
+
+        /* Когда сайдбар скрыт, панель ввода центрируется */
+        .input-area.centered {
+            justify-content: center;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         /* Овальная капсула поля ввода */
-        .input-capsule {
+        .chat-input {
             flex: 1;
-            background: #1c1c1e;
-            border: 2px solid var(--gold-soft);
+            min-width: 0;
+            padding: 18px 32px;
+            font-size: var(--input-font-size);
+            font-family: var(--font-family-main);
+            color: var(--color-light-text);
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid var(--color-gold);
             border-radius: 50px;
-            padding: 1.2rem 2rem;
-            font-size: var(--font-medium);
-            color: #ffffff;
             outline: none;
-            transition: all var(--transition-speed) ease;
-            caret-color: var(--gold);
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.25);
-            letter-spacing: 0.01em;
+            transition: all var(--transition-smooth);
+            caret-color: var(--color-gold);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2),
+                0 0 40px rgba(255, 204, 0, 0.05);
+            letter-spacing: 0.3px;
+            /* Базовое свечение */
         }
 
-        .input-capsule::placeholder {
-            color: #6e6e73;
-            font-weight: 300;
-        }
-
-        .input-capsule.focusable:focus,
-        .input-capsule.focusable:focus-visible {
-            border-color: var(--gold);
-            box-shadow: var(--gold-glow);
-            background: #242426;
+        /* Фокус на поле ввода */
+        .chat-input.focused,
+        .chat-input:focus-visible {
             transform: scale(1.02);
+            box-shadow: 0 0 30px var(--color-gold-glow),
+                0 0 80px rgba(255, 204, 0, 0.2);
+            border-color: var(--color-gold-glow-strong);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         /* Круглая кнопка микрофона */
         .mic-button {
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
+            min-width: 60px;
             border-radius: 50%;
-            background: #1c1c1e;
-            border: 2px solid var(--gold-soft);
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid var(--color-gold);
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            font-size: 26px;
+            color: var(--color-gold);
+            transition: all var(--transition-smooth);
             outline: none;
-            transition: all var(--transition-speed) ease;
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
-            flex-shrink: 0;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
         }
 
-        .mic-button svg {
-            width: 32px;
-            height: 32px;
-            fill: var(--gold);
-            transition: fill 0.3s ease;
-        }
-
-        .mic-button.focusable:focus,
-        .mic-button.focusable:focus-visible {
-            border-color: var(--gold);
-            box-shadow: var(--gold-glow);
+        /* Фокус на кнопке микрофона */
+        .mic-button.focused,
+        .mic-button:focus-visible {
             transform: scale(1.08);
+            box-shadow: 0 0 35px var(--color-gold-glow-strong),
+                0 0 90px rgba(255, 204, 0, 0.3);
+            border-color: var(--color-gold-glow-strong);
         }
 
-        /* Состояние записи (пульсация красным) */
-        .mic-button.recording {
-            border-color: var(--danger);
-            box-shadow: 0 0 30px rgba(255, 59, 48, 0.8);
-            animation: pulseRed 1.2s infinite ease-in-out;
+        /* Пульсация микрофона красным при записи */
+        .mic-button.listening {
+            animation: micPulse 1.2s ease-in-out infinite;
+            border-color: var(--color-red-pulse);
+            box-shadow: 0 0 40px rgba(255, 51, 51, 0.6),
+                0 0 100px rgba(255, 51, 51, 0.3);
+            color: var(--color-red-pulse);
+        }
+        .mic-button.listening.focused {
+            box-shadow: 0 0 50px rgba(255, 51, 51, 0.8),
+                0 0 130px rgba(255, 51, 51, 0.4);
+        }
+        @keyframes micPulse {
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(255, 51, 51, 0.5),
+                    0 0 60px rgba(255, 51, 51, 0.2);
+            }
+            50% {
+                transform: scale(1.15);
+                box-shadow: 0 0 45px rgba(255, 51, 51, 0.8),
+                    0 0 120px rgba(255, 51, 51, 0.4);
+            }
         }
 
-        .mic-button.recording svg {
-            fill: var(--danger);
+        /* ============================================================
+               АНИМАЦИЯ ОЖИДАНИЯ "ИИ ДУМАЕТ" (ТРЕУГОЛЬНИК ИЗ 3 ТОЧЕК)
+               ============================================================ */
+        .loading-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+            /* Скрыта по умолчанию, показывается через JS */
+        }
+        .loading-overlay.active {
+            display: block;
         }
 
-        @keyframes pulseRed {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 59, 48, 0.6); }
-            50% { transform: scale(1.12); box-shadow: 0 0 40px rgba(255, 59, 48, 0.9); }
+        /* Контейнер для трёх точек */
+        .triangle-loader {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* ============================
-               МОДАЛЬНОЕ ОКНО ВВОДА API-КЛЮЧА
-            ============================ */
+        /* Базовые стили точек */
+        .triangle-dot {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--color-gold);
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.7),
+                0 0 50px rgba(255, 204, 0, 0.3);
+            animation-duration: 2.8s;
+            animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+            animation-iteration-count: infinite;
+            will-change: transform;
+            /* Оптимизация для GPU */
+        }
+
+        /* Точка A — верхняя (центр сверху) */
+        .triangle-dot-a {
+            top: 5px;
+            left: 50%;
+            margin-left: -9px;
+            animation-name: dotAAnimation;
+        }
+
+        /* Точка B — нижняя левая */
+        .triangle-dot-b {
+            bottom: 5px;
+            left: 8px;
+            animation-name: dotBAnimation;
+        }
+
+        /* Точка C — нижняя правая */
+        .triangle-dot-c {
+            bottom: 5px;
+            right: 8px;
+            animation-name: dotCAnimation;
+        }
+
+        /* ============================================================
+           КЛЮЧЕВЫЕ КАДРЫ ДЛЯ АНИМАЦИИ ТРЕУГОЛЬНИКА
+           Цикл: сжатие к центру -> слияние -> разлёт со сменой мест
+           ============================================================ */
+        @keyframes dotAAnimation {
+            /* 0-25%: Сжатие к центру из верхней позиции */
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            25% {
+                transform: translate(0, 35px) scale(0.5);
+                opacity: 0.8;
+            }
+            /* 25-35%: Слияние в центральной точке */
+            35% {
+                transform: translate(0, 35px) scale(0.2);
+                opacity: 0.4;
+            }
+            /* 35-60%: Разлёт на позицию точки B (нижняя левая) */
+            60% {
+                transform: translate(-41px, 45px) scale(1);
+                opacity: 1;
+            }
+            /* 60-70%: Пауза на новой позиции */
+            70% {
+                transform: translate(-41px, 45px) scale(1);
+                opacity: 1;
+            }
+            /* 70-95%: Снова сжатие к центру */
+            85% {
+                transform: translate(-20px, 40px) scale(0.5);
+                opacity: 0.8;
+            }
+            95% {
+                transform: translate(0, 35px) scale(0.2);
+                opacity: 0.4;
+            }
+            /* 95-100%: Возврат на исходную позицию */
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes dotBAnimation {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            25% {
+                transform: translate(41px, -35px) scale(0.5);
+                opacity: 0.8;
+            }
+            35% {
+                transform: translate(41px, -35px) scale(0.2);
+                opacity: 0.4;
+            }
+            60% {
+                transform: translate(41px, 10px) scale(1);
+                opacity: 1;
+            }
+            70% {
+                transform: translate(41px, 10px) scale(1);
+                opacity: 1;
+            }
+            85% {
+                transform: translate(20px, -25px) scale(0.5);
+                opacity: 0.8;
+            }
+            95% {
+                transform: translate(41px, -35px) scale(0.2);
+                opacity: 0.4;
+            }
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes dotCAnimation {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            25% {
+                transform: translate(-41px, -35px) scale(0.5);
+                opacity: 0.8;
+            }
+            35% {
+                transform: translate(-41px, -35px) scale(0.2);
+                opacity: 0.4;
+            }
+            60% {
+                transform: translate(0, -45px) scale(1);
+                opacity: 1;
+            }
+            70% {
+                transform: translate(0, -45px) scale(1);
+                opacity: 1;
+            }
+            85% {
+                transform: translate(-20px, -25px) scale(0.5);
+                opacity: 0.8;
+            }
+            95% {
+                transform: translate(-41px, -35px) scale(0.2);
+                opacity: 0.4;
+            }
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ============================================================
+               МОДАЛЬНОЕ ОКНО ДЛЯ ВВОДА API-КЛЮЧА
+               ============================================================ */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -340,960 +641,1100 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            animation: fadeInOverlay 0.4s ease;
-            padding: 2rem;
+            animation: modalFadeIn 0.4s ease-out;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .modal-overlay.hidden {
+            display: none;
+        }
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
 
-        @keyframes fadeInOverlay {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .modal-content {
-            background: #1d1d1d;
-            border-radius: 28px;
-            padding: 3rem 3.5rem;
-            max-width: 600px;
+        /* Само модальное окно */
+        .modal-card {
+            background: var(--color-charcoal);
+            border: 2px solid var(--color-gold);
+            border-radius: 30px;
+            padding: 50px 40px;
+            max-width: 550px;
             width: 90%;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 204, 0, 0.2);
             text-align: center;
-            animation: slideUpModal 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 60px rgba(255, 204, 0, 0.25),
+                0 0 150px rgba(255, 204, 0, 0.1);
+            animation: modalCardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
-        @keyframes slideUpModal {
-            from { opacity: 0; transform: translateY(60px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes modalCardIn {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .modal-title {
-            font-size: 2rem;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 1rem;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--color-light-text);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
         }
 
-        .modal-description {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
+        .modal-subtitle {
+            font-size: 16px;
+            color: var(--color-gray-text);
+            margin-bottom: 30px;
             line-height: 1.5;
         }
 
         .modal-input {
             width: 100%;
-            background: #2c2c2e;
-            border: 2px solid var(--gold-soft);
-            border-radius: 16px;
-            padding: 1.2rem 1.5rem;
-            font-size: 1.1rem;
-            color: #ffffff;
+            padding: 16px 24px;
+            font-size: 18px;
+            font-family: var(--font-family-main);
+            color: var(--color-light-text);
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
             outline: none;
-            margin-bottom: 1.5rem;
-            transition: all 0.3s;
-            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+            transition: all var(--transition-smooth);
+            caret-color: var(--color-gold);
+            letter-spacing: 0.5px;
         }
 
-        .modal-input:focus {
-            border-color: var(--gold);
-            box-shadow: var(--gold-glow);
+        .modal-input:focus,
+        .modal-input.focused {
+            border-color: var(--color-gold);
+            box-shadow: 0 0 25px rgba(255, 204, 0, 0.3);
         }
 
-        .modal-submit {
-            background: var(--gold);
+        .modal-submit-btn {
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            font-family: var(--font-family-main);
+            color: #000000;
+            background: var(--color-gold);
             border: none;
             border-radius: 50px;
-            padding: 1.1rem 2.5rem;
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #000000;
             cursor: pointer;
+            transition: all var(--transition-smooth);
             outline: none;
-            transition: all 0.3s;
-            letter-spacing: 0.05em;
-            box-shadow: 0 10px 30px rgba(255, 204, 0, 0.3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.4);
         }
 
-        .modal-submit:hover,
-        .modal-submit:focus {
-            background: #ffd633;
-            box-shadow: var(--gold-glow);
-            transform: scale(1.02);
+        .modal-submit-btn:hover,
+        .modal-submit-btn.focused,
+        .modal-submit-btn:focus-visible {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(255, 204, 0, 0.7);
+            background: #ffdd33;
         }
 
-        .modal-hint {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            margin-top: 1rem;
+        .modal-error {
+            font-size: 14px;
+            color: #ff5555;
+            margin-top: 10px;
+            min-height: 20px;
+            transition: opacity 0.3s;
         }
 
-        /* ============================
-               АНИМАЦИЯ ОЖИДАНИЯ (ТРИ ТОЧКИ)
-            ============================ */
-        .thinking-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-
-        .thinking-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .triangle-loader {
-            position: relative;
-            width: 140px;
-            height: 120px;
-        }
-
-        .dot {
-            position: absolute;
-            width: 22px;
-            height: 22px;
-            background: var(--gold);
-            border-radius: 50%;
-            box-shadow: 0 0 25px rgba(255, 204, 0, 0.9), 0 0 60px rgba(255, 204, 0, 0.5);
-            animation-duration: 2.4s;
-            animation-iteration-count: infinite;
-            animation-timing-function: cubic-bezier(0.45, 0.05, 0.35, 0.95);
-        }
-
-        /* Точка сверху (по центру) */
-        .dot-top {
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            animation-name: orbitTop;
-        }
-
-        /* Точка слева снизу */
-        .dot-bottom-left {
-            bottom: 0;
-            left: 15%;
-            animation-name: orbitBottomLeft;
-        }
-
-        /* Точка справа снизу */
-        .dot-bottom-right {
-            bottom: 0;
-            right: 15%;
-            animation-name: orbitBottomRight;
-        }
-
-        /* Ключевые кадры: точки сжимаются к центру, меняются местами и разлетаются */
-        @keyframes orbitTop {
-            0%, 100% {
-                transform: translate(0, 0) scale(1);
-                background: #ffcc00;
-                box-shadow: 0 0 25px rgba(255, 204, 0, 0.9);
-            }
-            45% {
-                transform: translate(0, 50px) scale(0.6);
-                background: #ff9500;
-                box-shadow: 0 0 45px rgba(255, 149, 0, 1);
-            }
-            60% {
-                transform: translate(calc(-50% + 15px), 30px) scale(0.4);
-                background: #ff6b00;
-            }
-            75% {
-                transform: translate(calc(-50% - 10px), 20px) scale(0.5);
-            }
-            90% {
-                transform: translate(0, 10px) scale(0.9);
-            }
-        }
-
-        @keyframes orbitBottomLeft {
-            0%, 100% {
-                transform: translate(0, 0) scale(1);
-                background: #ffcc00;
-                box-shadow: 0 0 25px rgba(255, 204, 0, 0.9);
-            }
-            45% {
-                transform: translate(20px, -40px) scale(0.6);
-                background: #ff9500;
-                box-shadow: 0 0 45px rgba(255, 149, 0, 1);
-            }
-            60% {
-                transform: translate(50px, -35px) scale(0.4);
-                background: #ff6b00;
-            }
-            75% {
-                transform: translate(40px, -20px) scale(0.5);
-            }
-            90% {
-                transform: translate(5px, -5px) scale(0.9);
-            }
-        }
-
-        @keyframes orbitBottomRight {
-            0%, 100% {
-                transform: translate(0, 0) scale(1);
-                background: #ffcc00;
-                box-shadow: 0 0 25px rgba(255, 204, 0, 0.9);
-            }
-            45% {
-                transform: translate(-20px, -40px) scale(0.6);
-                background: #ff9500;
-                box-shadow: 0 0 45px rgba(255, 149, 0, 1);
-            }
-            60% {
-                transform: translate(-50px, -35px) scale(0.4);
-                background: #ff6b00;
-            }
-            75% {
-                transform: translate(-40px, -20px) scale(0.5);
-            }
-            90% {
-                transform: translate(-5px, -5px) scale(0.9);
-            }
-        }
-
-        /* ============================
-               АДАПТИВНОСТЬ ДЛЯ БОЛЬШИХ ТВ
-            ============================ */
-        @media (min-width: 1920px) {
+        /* ============================================================
+               АДАПТИВНОСТЬ ДЛЯ РАЗНЫХ РАЗРЕШЕНИЙ ТЕЛЕВИЗОРОВ
+               ============================================================ */
+        @media (min-width: 2560px) {
+            /* 4K телевизоры */
             :root {
-                --font-large: clamp(28px, 2.2vw, 44px);
-                --font-medium: clamp(20px, 1.4vw, 28px);
+                --base-font-size: 20px;
+                --chat-font-size: 32px;
+                --input-font-size: 26px;
             }
             .sidebar {
-                padding: 3rem 2.5rem;
+                padding: 40px 30px;
             }
-            .main-area {
-                padding: 3.5rem 4rem;
+            .sidebar-header {
+                font-size: 42px;
+            }
+            .model-logo {
+                width: 100px;
+                height: 100px;
+            }
+            .model-name {
+                font-size: 32px;
+            }
+            .model-description {
+                font-size: 18px;
+            }
+            .mic-button {
+                width: 80px;
+                height: 80px;
+                min-width: 80px;
+                font-size: 34px;
+            }
+            .triangle-loader {
+                width: 140px;
+                height: 140px;
+            }
+            .triangle-dot {
+                width: 24px;
+                height: 24px;
             }
         }
 
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 35%;
-                min-width: 200px;
-                padding: 1.5rem 1rem;
+        @media (max-width: 1280px) {
+            :root {
+                --chat-font-size: 20px;
+                --input-font-size: 16px;
             }
-            .sidebar-title { font-size: 2rem; }
-            .model-name { font-size: 1.3rem; }
-            .main-area { padding: 1.5rem 1.5rem; }
-            .input-capsule { padding: 1rem 1.5rem; }
-            .mic-button { width: 55px; height: 55px; }
+            .sidebar {
+                min-width: 220px;
+                padding: 20px 16px;
+            }
+            .sidebar-header {
+                font-size: 24px;
+            }
+            .model-logo {
+                width: 60px;
+                height: 60px;
+            }
+            .model-name {
+                font-size: 20px;
+            }
+            .messages-container {
+                padding: 20px 25px 10px;
+            }
+            .input-area {
+                padding: 14px 25px 20px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- ============================
+    <!-- ============================================================
     ОСНОВНОЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ
-    ============================ -->
+    ============================================================ -->
     <div class="app-container" id="appContainer">
 
-        <!-- ЛЕВАЯ ПАНЕЛЬ -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-title">HydroAI</div>
-                <div class="sidebar-subtitle">Smart TV Edition</div>
+        <!-- ЛЕВАЯ БОКОВАЯ ПАНЕЛЬ (SIDEBAR) -->
+        <aside class="sidebar" id="sidebar" role="navigation" aria-label="Боковая панель">
+            <!-- Заголовок HydroAI -->
+            <div class="sidebar-header">HydroAI</div>
+
+            <!-- Подпись "Модель" -->
+            <div class="model-label">Модель</div>
+
+            <!-- Карточка активной модели (кликабельна для переключения) -->
+            <div
+            class="model-card focusable"
+            id="modelCard"
+            tabindex="0"
+            role="button"
+            aria-label="Переключить модель"
+            title="Нажмите Enter для переключения модели"
+            >
+            <!-- Логотип модели (используются пользовательские изображения) -->
+            <img
+            src="chatgpt.png"
+            alt="Логотип модели"
+            class="model-logo"
+            id="modelLogo"
+            onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect width=%2280%22 height=%2280%22 rx=%2215%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2250%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22 dy=%22.35em%22>AI</text></svg>'"
+            >
+            <!-- Название модели -->
+            <div class="model-name" id="modelName">GPT-5.6-Luna</div>
+            <!-- Описание модели -->
+            <div class="model-description" id="modelDescription">
+                Рекомендуется для повседневных задач
             </div>
-
-            <div class="model-block">
-                <div class="model-label">Модель</div>
-                <!-- Карточка активной модели (фокус и клики) -->
-                <div class="model-card focusable" id="modelCard" tabindex="0" role="button" aria-label="Выбрать модель">
-                    <div class="model-icon" id="modelIconContainer">
-                        <!-- Встроенный SVG логотип OpenAI (заменён на пользовательские изображения при необходимости) -->
-                        <!-- По умолчанию inline SVG для GPT моделей, но если фото модели задано, JS заменит на <img> -->
-                        <svg id="openaiLogoSvg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A6.0651 6.0651 0 0 0 19.0193 19.8182a5.9847 5.9847 0 0 0 3.9977-2.9001 6.0462 6.0462 0 0 0-.7351-7.097zm-9.4248 6.2363a5.7128 5.7128 0 0 1-.7104 0l.0414-2.3535a3.2845 3.2845 0 0 0 .6276 0l.0414 2.3535zm-.7136-8.2295a3.2845 3.2845 0 0 0-.6276 0l-.0414-2.3535a5.7128 5.7128 0 0 1 .7104 0l-.0414 2.3535zm-4.1234 9.6355a5.91 5.91 0 0 1-.6212-.4982l1.6425-1.6937a3.207 3.207 0 0 0 .4554.4451l-1.4767 1.7468zm-1.6787-4.353a5.91 5.91 0 0 1-.1943-.7817l2.3363.294a3.207 3.207 0 0 0 .0456.6262l-2.1876-.1385zm12.7234 1.5662a5.91 5.91 0 0 1-.4322.6328l-2.0262-1.2115a3.207 3.207 0 0 0 .3693-.5134l2.0891 1.0921zm.2404-3.5804a5.91 5.91 0 0 1-.1943.7817l-2.3363-.294a3.207 3.207 0 0 0-.0456-.6262l2.1876.1385zm-3.6624 7.3555l-1.6425-1.6937a3.207 3.207 0 0 0 .4554-.4451l1.4767 1.7468a5.91 5.91 0 0 1-.6212.4982z"/>
-                        </svg>
-                    </div>
-                    <div class="model-name" id="modelNameDisplay">gpt-5.6-luna</div>
-                    <div class="model-description" id="modelDescription">Рекомендуется для повседневных задач</div>
-                </div>
-            </div>
-
-            <div class="watermark">HydroAI 1.0</div>
-        </aside>
-
-        <!-- ПРАВАЯ ОБЛАСТЬ -->
-        <main class="main-area">
-            <!-- Область чата -->
-            <div class="chat-output" id="chatOutput" aria-live="polite">
-                <!-- Сообщения будут добавляться динамически -->
-                <div class="message ai">
-                    Добро пожаловать в HydroAI 1.0! Выберите модель и задайте вопрос.
-                </div>
-            </div>
-
-            <!-- Панель ввода -->
-            <div class="input-panel">
-                <input type="text" class="input-capsule focusable" id="textInput"
-                       placeholder="Введите сообщение или используйте микрофон..." tabindex="0" autocomplete="off">
-                <button class="mic-button focusable" id="micButton" tabindex="0" aria-label="Голосовой ввод">
-                    <!-- Иконка микрофона -->
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                    </svg>
-                </button>
-            </div>
-        </main>
-    </div>
-
-    <!-- Оверлей анимации "ИИ думает" -->
-    <div class="thinking-overlay" id="thinkingOverlay">
-        <div class="triangle-loader">
-            <div class="dot dot-top"></div>
-            <div class="dot dot-bottom-left"></div>
-            <div class="dot dot-bottom-right"></div>
         </div>
+
+        <!-- Кнопка смены API-ключа -->
+        <button
+        class="sidebar-api-btn focusable"
+        id="apiKeyBtn"
+        tabindex="-1"
+        role="button"
+        aria-label="Изменить API-ключ"
+        title="Изменить API-ключ"
+        >
+        🔑 API Key
+    </button>
+
+    <!-- Водяной знак HydroAI внизу -->
+    <div class="sidebar-watermark" aria-hidden="true">HydroAI</div>
+</aside>
+
+<!-- ПРАВАЯ ОБЛАСТЬ ЧАТА -->
+<main class="chat-area" id="chatArea" role="main" aria-label="Область чата">
+    <!-- Контейнер сообщений -->
+    <div class="messages-container" id="messagesContainer">
+        <!-- Сообщения будут добавляться сюда динамически через JavaScript -->
     </div>
 
-    <!-- Модальное окно ввода API-ключа -->
-    <div class="modal-overlay" id="modalOverlay" style="display: none;">
-        <div class="modal-content">
-            <h2 class="modal-title">Введите API-ключ</h2>
-            <p class="modal-description">Для работы HydroAI необходим ключ VoidAI / DeepSeek. Он будет сохранён локально и привязан к вашему IP-адресу.</p>
-            <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
-            <br>
-            <button class="modal-submit focusable" id="modalSubmitBtn" tabindex="0">Сохранить и продолжить</button>
-            <div class="modal-hint">Ключ хранится только на этом устройстве</div>
+    <!-- Нижняя панель ввода -->
+    <div class="input-area" id="inputArea">
+        <!-- Овальная капсула поля ввода -->
+        <input
+        type="text"
+        class="chat-input focusable"
+        id="chatInput"
+        tabindex="0"
+        placeholder="Введите сообщение..."
+        autocomplete="off"
+        aria-label="Поле ввода сообщения"
+        >
+        <!-- Круглая кнопка микрофона -->
+        <button
+        class="mic-button focusable"
+        id="micButton"
+        tabindex="-1"
+        role="button"
+        aria-label="Голосовой ввод"
+        title="Голосовой ввод (нажмите Enter)"
+        >
+        🎤
+    </button>
+</div>
+</main>
+</div>
+
+<!-- ============================================================
+АНИМАЦИЯ ОЖИДАНИЯ "ИИ ДУМАЕТ" (ТРЕУГОЛЬНИК ИЗ ТОЧЕК)
+============================================================ -->
+<div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+    <div class="triangle-loader">
+        <div class="triangle-dot triangle-dot-a"></div>
+        <div class="triangle-dot triangle-dot-b"></div>
+        <div class="triangle-dot triangle-dot-c"></div>
+    </div>
+</div>
+
+<!-- ============================================================
+МОДАЛЬНОЕ ОКНО ДЛЯ ВВОДА API-КЛЮЧА
+============================================================ -->
+<div class="modal-overlay hidden" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+        <div class="modal-title" id="modalTitle">HydroAI</div>
+        <div class="modal-subtitle">
+            Введите ваш API-ключ VoidAI / DeepSeek<br>
+            для активации нейросети
         </div>
-    </div>
+        <input
+        type="password"
+        class="modal-input focusable"
+        id="modalApiInput"
+        tabindex="0"
+        placeholder="sk-..."
+        autocomplete="off"
+        aria-label="API-ключ"
+        >
+        <button
+        class="modal-submit-btn focusable"
+        id="modalSubmitBtn"
+        tabindex="-1"
+        role="button"
+        aria-label="Подтвердить API-ключ"
+        >
+        Подтвердить
+    </button>
+    <div class="modal-error" id="modalError"></div>
+</div>
+</div>
 
-    <script>
-        (function() {
-            'use strict';
+<!-- ============================================================
+JAVASCRIPT — ВСЯ ЛОГИКА ПРИЛОЖЕНИЯ
+============================================================ -->
+<script>
+    (function() {
+        'use strict';
 
-            /* ============================
-               КОНФИГУРАЦИЯ И СОСТОЯНИЕ
-            ============================ */
-            const CONFIG = {
-                API_ENDPOINT: 'https://api.voidai.app/v1/chat/completions',
-                DEFAULT_MODEL: 'gpt-5.6-luna',
-                STORAGE_PREFIX: 'hydro_key_',
-                IP_SERVICE: 'https://api.ipify.org?format=json',
-                // Список моделей с описаниями и путями к пользовательским изображениям
-                MODELS: [
-                    {
-                        id: 'gpt-5.6-luna',
-                        name: 'GPT-5.6-Luna',
-                        description: 'Рекомендуется для повседневных задач',
-                        image: 'chatgpt.png', // пользовательское фото
-                        useSvgFallback: true // если фото не загрузится, будет SVG
-                    },
-                    {
-                        id: 'gpt-5.4-mini',
-                        name: 'GPT-5.4-Mini',
-                        description: 'Быстрая и лёгкая модель',
-                        image: 'chatgpt.png',
-                        useSvgFallback: true
-                    },
-                    {
-                        id: 'gpt-oss-120b',
-                        name: 'GPT-OSS-120B',
-                        description: 'Открытая модель большого размера',
-                        image: 'chatgpt.png',
-                        useSvgFallback: true
-                    },
-                    {
-                        id: 'gemma-4-31b-it',
-                        name: 'Gemma-4-31B-IT',
-                        description: 'Инструктивная модель Gemma',
-                        image: 'gemma.png', // пользовательское фото
-                        useSvgFallback: false
-                    },
-                    {
-                        id: 'gemini-3.5-flash-lite',
-                        name: 'Gemini-3.5-Flash-Lite',
-                        description: 'Лёгкая мультимодальная',
-                        image: 'gemma.png', // заменено на gemma, но можно своё
-                        useSvgFallback: false
-                    },
-                    {
-                        id: 'qwen3.8-2.4t-a95b',
-                        name: 'Qwen3.8-2.4T-A95B',
-                        description: 'Высокопроизводительная Qwen',
-                        image: 'qwen.png', // пользовательское фото
-                        useSvgFallback: false
-                    }
-                ],
-                // Путь к SVG логотипу OpenAI (используется как fallback)
-                OPENAI_SVG: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A6.0651 6.0651 0 0 0 19.0193 19.8182a5.9847 5.9847 0 0 0 3.9977-2.9001 6.0462 6.0462 0 0 0-.7351-7.097zM12.8571 16.0574a5.7128 5.7128 0 0 1-.7104 0l.0414-2.3535a3.2845 3.2845 0 0 0 .6276 0l.0414 2.3535zm-.7136-8.2295a3.2845 3.2845 0 0 0-.6276 0l-.0414-2.3535a5.7128 5.7128 0 0 1 .7104 0l-.0414 2.3535zm-4.1234 9.6355a5.91 5.91 0 0 1-.6212-.4982l1.6425-1.6937a3.207 3.207 0 0 0 .4554.4451l-1.4767 1.7468zm-1.6787-4.353a5.91 5.91 0 0 1-.1943-.7817l2.3363.294a3.207 3.207 0 0 0 .0456.6262l-2.1876-.1385zm12.7234 1.5662a5.91 5.91 0 0 1-.4322.6328l-2.0262-1.2115a3.207 3.207 0 0 0 .3693-.5134l2.0891 1.0921zm.2404-3.5804a5.91 5.91 0 0 1-.1943.7817l-2.3363-.294a3.207 3.207 0 0 0-.0456-.6262l2.1876.1385zm-3.6624 7.3555l-1.6425-1.6937a3.207 3.207 0 0 0 .4554-.4451l1.4767 1.7468a5.91 5.91 0 0 1-.6212.4982z"/></svg>'
-            };
+        // ============================================================
+        // 1. КОНФИГУРАЦИЯ И ДАННЫЕ МОДЕЛЕЙ
+        // ============================================================
+        const VOIDAI_API_URL = 'https://api.voidai.app/v1/chat/completions';
+        const IPIFY_URL = 'https://api.ipify.org?format=json';
 
-            // Состояние приложения
-            let state = {
-                currentModelIndex: 0, // индекс в CONFIG.MODELS
-                apiKey: null,
-                userIP: null,
-                isRecording: false,
-                isThinking: false,
-                recognition: null, // объект распознавания речи
-                focusableElements: [], // массив для навигации
-                currentFocusIndex: 0,
-            };
+        // Массив моделей с полными данными
+        const MODELS = [
+            {
+                id: 'gpt-5.6-luna',
+                displayName: 'GPT-5.6-Luna',
+                description: 'Рекомендуется для повседневных задач',
+                logo: 'chatgpt.png',
+                fallbackLogo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" rx="15" fill="%23333"/><text x="50%" y="50%" fill="%23fff" font-size="30" text-anchor="middle" dy=".35em">GPT</text></svg>'
+            }, {
+                id: 'gpt-5.4-mini',
+                displayName: 'GPT-5.4-Mini',
+                description: 'Быстрая и лёгкая модель для простых задач',
+                logo: 'chatgpt.png',
+                fallbackLogo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" rx="15" fill="%23333"/><text x="50%" y="50%" fill="%23fff" font-size="30" text-anchor="middle" dy=".35em">GPT</text></svg>'
+            }, {
+                id: 'gpt-oss-120b',
+                displayName: 'GPT-OSS-120B',
+                description: 'Мощная открытая модель для сложных задач',
+                logo: 'chatgpt.png',
+                fallbackLogo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" rx="15" fill="%23333"/><text x="50%" y="50%" fill="%23fff" font-size="30" text-anchor="middle" dy=".35em">GPT</text></svg>'
+            }, {
+                id: 'gemma-4-31b-it',
+                displayName: 'Gemma-4-31B-IT',
+                description: 'Сбалансированная модель от Google',
+                logo: 'gemma.png',
+                fallbackLogo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" rx="15" fill="%23333"/><text x="50%" y="50%" fill="%23fff" font-size="30" text-anchor="middle" dy=".35em">GEM</text></svg>'
+            }, {
+                id: 'gemini-3.5-flash-lite',
+                displayName: 'Gemini-3.5-Flash-Lite',
+                description: 'Лёгкая и сверхбыстрая модель',
+                logo: 'chatgpt.png',
+                fallbackLogo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" rx="15" fill="%23333"/><text x="50%" y="50%" fill="%23fff" font-size="30" text-anchor="middle" dy=".35em">GEM</text></svg>'
+            }, {
+                id: 'qwen3.8-2.4t-a95b',
+                displayName: 'Qwen3.8-2.4T-A95B',
+                description: 'Компактная мультимодальная модель',
+                logo: 'qwen.png',
+                fallbackLogo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" rx="15" fill="%23333"/><text x="50%" y="50%" fill="%23fff" font-size="30" text-anchor="middle" dy=".35em">QWEN</text></svg>'
+            }
+        ];
 
-            // DOM элементы
-            const dom = {
-                modelCard: document.getElementById('modelCard'),
-                modelName: document.getElementById('modelNameDisplay'),
-                modelDescription: document.getElementById('modelDescription'),
-                modelIconContainer: document.getElementById('modelIconContainer'),
-                chatOutput: document.getElementById('chatOutput'),
-                textInput: document.getElementById('textInput'),
-                micButton: document.getElementById('micButton'),
-                thinkingOverlay: document.getElementById('thinkingOverlay'),
-                modalOverlay: document.getElementById('modalOverlay'),
-                apiKeyInput: document.getElementById('apiKeyInput'),
-                modalSubmit: document.getElementById('modalSubmitBtn'),
-            };
+        // Текущий индекс активной модели
+        let currentModelIndex = 0;
 
-            /* ============================
-               УТИЛИТЫ
-            ============================ */
-            // Получение текущего IP через ipify
-            async function fetchUserIP() {
-                try {
-                    const response = await fetch(CONFIG.IP_SERVICE);
-                    if (!response.ok) throw new Error('IP service error');
-                    const data = await response.json();
-                    return data.ip;
-                } catch (err) {
-                    console.warn('Не удалось получить IP, используем "unknown".', err);
-                    return 'unknown';
+        // ============================================================
+        // 2. DOM-ЭЛЕМЕНТЫ
+        // ============================================================
+        const sidebar = document.getElementById('sidebar');
+        const modelCard = document.getElementById('modelCard');
+        const modelLogo = document.getElementById('modelLogo');
+        const modelName = document.getElementById('modelName');
+        const modelDescription = document.getElementById('modelDescription');
+        const apiKeyBtn = document.getElementById('apiKeyBtn');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const inputArea = document.getElementById('inputArea');
+        const chatInput = document.getElementById('chatInput');
+        const micButton = document.getElementById('micButton');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalApiInput = document.getElementById('modalApiInput');
+        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+        const modalError = document.getElementById('modalError');
+
+        // ============================================================
+        // 3. УПРАВЛЕНИЕ ФОКУСОМ ДЛЯ D-PAD НАВИГАЦИИ
+        // ============================================================
+        let currentFocusIndex = 0;
+        let focusableElements = [];
+        let sidebarVisible = true;
+        let modalActive = false;
+
+        /**
+         * Обновляет список фокусируемых элементов в зависимости от
+         * текущего состояния интерфейса (видимость сайдбара, модальное окно)
+         */
+        function updateFocusableElements() {
+            if (modalActive) {
+                // Если модальное окно открыто, фокусируемы только его элементы
+                focusableElements = [modalApiInput, modalSubmitBtn].filter(el => el && el.offsetParent !==
+                    null);
+            } else {
+                // В обычном режиме: модель (если сайдбар виден), поле ввода, кнопка микрофона, кнопка API
+                const elements = [];
+                if (sidebarVisible) {
+                    elements.push(modelCard);
+                    elements.push(apiKeyBtn);
                 }
+                elements.push(chatInput);
+                elements.push(micButton);
+                focusableElements = elements.filter(el => el && el.offsetParent !== null);
             }
 
-            // Сохранение ключа в localStorage с привязкой к IP
-            function saveApiKey(ip, key) {
-                localStorage.setItem(`${CONFIG.STORAGE_PREFIX}${ip}`, key);
-                state.apiKey = key;
-                state.userIP = ip;
+            // Убедимся, что текущий индекс не выходит за границы
+            if (currentFocusIndex >= focusableElements.length) {
+                currentFocusIndex = Math.max(0, focusableElements.length - 1);
             }
+            if (currentFocusIndex < 0) currentFocusIndex = 0;
+        }
 
-            // Загрузка ключа по текущему IP
-            function loadApiKeyForIP(ip) {
-                const storedKey = localStorage.getItem(`${CONFIG.STORAGE_PREFIX}${ip}`);
-                if (storedKey) {
-                    state.apiKey = storedKey;
-                    state.userIP = ip;
-                    return true;
-                }
+        /**
+         * Применяет визуальный фокус к элементу по индексу
+         */
+        function applyFocus(index) {
+            // Снимаем фокус со всех элементов
+            focusableElements.forEach(el => {
+                el.classList.remove('focused');
+                el.blur();
+            });
+
+            if (focusableElements.length === 0) return;
+
+            // Применяем фокус к текущему элементу
+            const target = focusableElements[index];
+            if (target) {
+                target.classList.add('focused');
+                target.focus({ preventScroll: true });
+                currentFocusIndex = index;
+                // Плавная прокрутка к элементу, если он вне видимости
+                target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        /**
+         * Перемещает фокус на следующий элемент (циклически)
+         */
+        function focusNext() {
+            if (focusableElements.length === 0) return;
+            const nextIndex = (currentFocusIndex + 1) % focusableElements.length;
+            applyFocus(nextIndex);
+        }
+
+        /**
+         * Перемещает фокус на предыдущий элемент (циклически)
+         */
+        function focusPrev() {
+            if (focusableElements.length === 0) return;
+            const prevIndex = (currentFocusIndex - 1 + focusableElements.length) % focusableElements
+                .length;
+            applyFocus(prevIndex);
+        }
+
+        // ============================================================
+        // 4. ЛОГИКА УПРАВЛЕНИЯ САЙДБАРОМ (КЛАВИША "5")
+        // ============================================================
+        function toggleSidebar() {
+            sidebarVisible = !sidebarVisible;
+            if (sidebarVisible) {
+                sidebar.classList.remove('hidden');
+                inputArea.classList.remove('centered');
+                apiKeyBtn.setAttribute('tabindex', '-1');
+                modelCard.setAttribute('tabindex', '0');
+            } else {
+                sidebar.classList.add('hidden');
+                inputArea.classList.add('centered');
+                apiKeyBtn.setAttribute('tabindex', '-1');
+                modelCard.setAttribute('tabindex', '-1');
+            }
+            // Обновляем список фокусируемых элементов и переустанавливаем фокус
+            updateFocusableElements();
+            applyFocus(0);
+        }
+
+        // ============================================================
+        // 5. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ МОДЕЛЕЙ
+        // ============================================================
+        function cycleModel() {
+            currentModelIndex = (currentModelIndex + 1) % MODELS.length;
+            const model = MODELS[currentModelIndex];
+            modelName.textContent = model.displayName;
+            modelDescription.textContent = model.description;
+            modelLogo.src = model.logo;
+            modelLogo.alt = 'Логотип ' + model.displayName;
+            modelLogo.onerror = function() {
+                this.src = model.fallbackLogo;
+                this.onerror = null;
+            };
+        }
+
+        function getCurrentModelId() {
+            return MODELS[currentModelIndex].id;
+        }
+
+        // ============================================================
+        // 6. АВТОРИЗАЦИЯ И УПРАВЛЕНИЕ API-КЛЮЧОМ ПО IP-АДРЕСУ
+        // ============================================================
+        let userIP = null;
+        let apiKey = null;
+
+        /**
+         * Получает текущий публичный IP-адрес пользователя
+         * Используется бесплатный сервис ipify.org
+         */
+        async function fetchUserIP() {
+            try {
+                const response = await fetch(IPIFY_URL, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    timeout: 5000 // Не во всех браузерах поддерживается, но оставим
+                });
+                if (!response.ok) throw new Error('Ошибка получения IP');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.warn('Не удалось получить IP-адрес:', error);
+                // Запасной вариант: используем "unknown" если IP не получен
+                return 'unknown_ip';
+            }
+        }
+
+        /**
+         * Формирует ключ для localStorage на основе IP-адреса
+         */
+        function getStorageKey(ip) {
+            return 'hydro_key_' + (ip || 'unknown_ip');
+        }
+
+        /**
+         * Загружает API-ключ из localStorage по текущему IP
+         */
+        function loadApiKeyForIP(ip) {
+            const key = getStorageKey(ip);
+            const savedKey = localStorage.getItem(key);
+            return savedKey || null;
+        }
+
+        /**
+         * Сохраняет API-ключ в localStorage с привязкой к текущему IP
+         */
+        function saveApiKeyForIP(ip, key) {
+            const storageKey = getStorageKey(ip);
+            localStorage.setItem(storageKey, key);
+            // Также сохраняем IP для быстрого доступа
+            localStorage.setItem('hydro_last_ip', ip);
+        }
+
+        /**
+         * Инициализирует авторизацию: проверяет IP, загружает ключ
+         */
+        async function initAuth() {
+            userIP = await fetchUserIP();
+            apiKey = loadApiKeyForIP(userIP);
+
+            if (apiKey) {
+                // Ключ найден — приложение готово к работе
+                console.log('API-ключ загружен для IP:', userIP);
+                return true;
+            } else {
+                // Ключ не найден — показываем модальное окно
+                console.log('API-ключ не найден для IP:', userIP, '— показать модальное окно');
+                showModal();
                 return false;
             }
+        }
 
-            // Установка модели по индексу
-            function setModelByIndex(index) {
-                if (index >= 0 && index < CONFIG.MODELS.length) {
-                    state.currentModelIndex = index;
-                    updateModelUI();
-                }
+        /**
+         * Показывает модальное окно для ввода API-ключа
+         */
+        function showModal() {
+            modalActive = true;
+            modalOverlay.classList.remove('hidden');
+            modalApiInput.value = '';
+            modalError.textContent = '';
+            updateFocusableElements();
+            applyFocus(0);
+            // Фокусируемся на поле ввода
+            setTimeout(() => {
+                modalApiInput.focus();
+                modalApiInput.classList.add('focused');
+            }, 100);
+        }
+
+        /**
+         * Скрывает модальное окно
+         */
+        function hideModal() {
+            modalActive = false;
+            modalOverlay.classList.add('hidden');
+            updateFocusableElements();
+            applyFocus(0);
+        }
+
+        /**
+         * Обрабатывает отправку API-ключа из модального окна
+         */
+        function handleApiKeySubmit() {
+            const enteredKey = modalApiInput.value.trim();
+            if (!enteredKey || enteredKey.length < 5) {
+                modalError.textContent = 'Введите корректный API-ключ (минимум 5 символов)';
+                return;
+            }
+            if (!enteredKey.startsWith('sk-') && !enteredKey.startsWith('ds-') && !enteredKey.startsWith(
+                    'voidai-')) {
+                // Не критично, но предупредим
+                console.warn('Ключ может быть некорректным, но продолжим');
             }
 
-            // Обновление UI карточки модели (название, описание, картинка)
-            function updateModelUI() {
-                const model = CONFIG.MODELS[state.currentModelIndex];
-                dom.modelName.textContent = model.name;
-                dom.modelDescription.textContent = model.description;
+            apiKey = enteredKey;
+            saveApiKeyForIP(userIP, apiKey);
+            modalError.textContent = '';
+            hideModal();
+            console.log('API-ключ сохранён для IP:', userIP);
+        }
 
-                // Заменяем содержимое иконки на пользовательское изображение, если указано
-                if (model.image) {
-                    const img = new Image();
-                    img.src = model.image;
-                    img.alt = model.name;
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.objectFit = 'contain';
-                    img.style.borderRadius = '8px';
-                    // Обработка ошибки: если фото не загрузилось, показываем SVG fallback
-                    img.onerror = function() {
-                        if (model.useSvgFallback) {
-                            dom.modelIconContainer.innerHTML = CONFIG.OPENAI_SVG;
-                            const svg = dom.modelIconContainer.querySelector('svg');
-                            if (svg) {
-                                svg.style.width = '100%';
-                                svg.style.height = '100%';
-                                svg.style.fill = '#000000';
-                            }
-                        } else {
-                            // Для gemma/qwen можно оставить стандартный SVG или пусто
-                            dom.modelIconContainer.innerHTML = '<span style="font-size:3rem;color:#fff;">🤖</span>';
-                        }
-                    };
-                    dom.modelIconContainer.innerHTML = '';
-                    dom.modelIconContainer.appendChild(img);
+        // ============================================================
+        // 7. ОТПРАВКА СООБЩЕНИЙ И ВЗАИМОДЕЙСТВИЕ С API
+        // ============================================================
+        /**
+         * Добавляет сообщение пользователя в чат
+         */
+        function addUserMessage(text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message-user';
+            msgDiv.textContent = text;
+            messagesContainer.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        /**
+         * Добавляет сообщение ИИ с эффектом печатной машинки
+         */
+        function addAIMessageTyped(text, callback) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message-ai';
+            messagesContainer.appendChild(msgDiv);
+
+            // Создаём курсор
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+            msgDiv.appendChild(cursor);
+
+            let charIndex = 0;
+            const typingSpeed = 18; // мс на символ — плавная скорость
+
+            // Удаляем курсор перед началом
+            cursor.remove();
+
+            // Текстовый контейнер
+            const textSpan = document.createElement('span');
+            msgDiv.appendChild(textSpan);
+
+            function typeNextChar() {
+                if (charIndex < text.length) {
+                    textSpan.textContent += text.charAt(charIndex);
+                    charIndex++;
+                    scrollToBottom();
+                    setTimeout(typeNextChar, typingSpeed);
                 } else {
-                    dom.modelIconContainer.innerHTML = CONFIG.OPENAI_SVG;
+                    // Завершение — убираем курсор (если он был)
+                    msgDiv.querySelectorAll('.typing-cursor').forEach(el => el.remove());
+                    if (callback) callback();
                 }
             }
 
-            // Переключение на следующую модель (циклически)
-            function cycleModel(direction = 1) {
-                const newIndex = (state.currentModelIndex + direction + CONFIG.MODELS.length) % CONFIG.MODELS.length;
-                setModelByIndex(newIndex);
+            // Добавляем курсор для мигания
+            const blinkCursor = document.createElement('span');
+            blinkCursor.className = 'typing-cursor';
+            msgDiv.appendChild(blinkCursor);
+
+            typeNextChar();
+
+            // Сохраняем ссылку на курсор, чтобы убрать после завершения
+            const checkInterval = setInterval(() => {
+                if (charIndex >= text.length) {
+                    clearInterval(checkInterval);
+                    blinkCursor.remove();
+                }
+            }, 100);
+        }
+
+        /**
+         * Показывает анимацию ожидания (треугольник из точек)
+         */
+        function showLoading() {
+            loadingOverlay.classList.add('active');
+        }
+
+        /**
+         * Скрывает анимацию ожидания
+         */
+        function hideLoading() {
+            loadingOverlay.classList.remove('active');
+        }
+
+        /**
+         * Автоматическая прокрутка к последнему сообщению
+         */
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        /**
+         * Отправляет запрос к VoidAI API и обрабатывает ответ
+         */
+        async function sendToAI(userMessage) {
+            if (!apiKey) {
+                console.error('API-ключ не установлен');
+                showModal();
+                return;
             }
 
-            /* ============================
-               НАВИГАЦИЯ С ПУЛЬТА (D-PAD)
-            ============================ */
-            function collectFocusableElements() {
-                // Все элементы с классом focusable
-                state.focusableElements = Array.from(document.querySelectorAll('.focusable'));
-                // Если модальное окно открыто, фокусируемся на его элементах
-                if (dom.modalOverlay.style.display !== 'none') {
-                    state.focusableElements = [dom.apiKeyInput, dom.modalSubmit];
+            const modelId = getCurrentModelId();
+            showLoading();
+
+            try {
+                const response = await fetch(VOIDAI_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + apiKey
+                    },
+                    body: JSON.stringify({
+                        model: modelId,
+                        messages: [
+                            { role: 'user', content: userMessage }
+                        ],
+                        max_tokens: 2000,
+                        temperature: 0.7,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMsg = errorData.error?.message || ('HTTP ошибка: ' + response.status);
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices?.[0]?.message?.content || 'Пустой ответ от модели';
+
+                hideLoading();
+                addAIMessageTyped(aiResponse);
+
+            } catch (error) {
+                hideLoading();
+                console.error('Ошибка API:', error);
+                const errorMsg = '⚠️ Ошибка: ' + (error.message || 'Не удалось получить ответ');
+                const errDiv = document.createElement('div');
+                errDiv.className = 'message-ai';
+                errDiv.textContent = errorMsg;
+                errDiv.style.color = '#ff5555';
+                errDiv.style.borderColor = 'rgba(255,85,85,0.4)';
+                messagesContainer.appendChild(errDiv);
+                scrollToBottom();
+
+                // Если ошибка авторизации — показываем модальное окно
+                if (error.message.includes('401') || error.message.includes('auth') ||
+                    error.message.toLowerCase().includes('unauthorized')) {
+                    showModal();
                 }
             }
+        }
 
-            function focusElement(index) {
-                if (!state.focusableElements.length) return;
-                // Зацикливание
-                if (index < 0) index = state.focusableElements.length - 1;
-                if (index >= state.focusableElements.length) index = 0;
-                state.currentFocusIndex = index;
-                const el = state.focusableElements[index];
-                if (el) {
-                    el.focus();
-                    // Плавная подсветка через класс (уже через CSS :focus)
-                }
+        /**
+         * Отправляет сообщение пользователя (из поля ввода)
+         */
+        function sendUserMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            addUserMessage(text);
+            chatInput.value = '';
+            sendToAI(text);
+        }
+
+        // ============================================================
+        // 8. ГОЛОСОВОЙ ВВОД (WEB SPEECH API)
+        // ============================================================
+        let recognition = null;
+        let isListening = false;
+
+        /**
+         * Инициализирует распознавание речи (русский язык)
+         */
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn('Web Speech API не поддерживается в этом браузере');
+                return null;
             }
 
-            function handleDPadNavigation(e) {
-                const key = e.key;
-                // Определяем направление
-                const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key);
+            const rec = new SpeechRecognition();
+            rec.lang = 'ru-RU';
+            rec.interimResults = false;
+            rec.maxAlternatives = 1;
+            rec.continuous = false;
 
-                if (!isArrow) return;
+            rec.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                if (transcript && transcript.trim()) {
+                    chatInput.value = transcript;
+                    // Автоматически отправляем распознанный текст
+                    sendUserMessage();
+                }
+            };
 
-                // Если модальное окно открыто, обрабатываем отдельно
-                if (dom.modalOverlay.style.display !== 'none') {
-                    if (key === 'Enter') {
-                        e.preventDefault();
-                        submitApiKey();
-                    } else if (key === 'ArrowDown' || key === 'ArrowUp') {
-                        // Переключение между полем ввода и кнопкой
-                        e.preventDefault();
-                        const current = document.activeElement;
-                        if (current === dom.apiKeyInput) {
-                            dom.modalSubmit.focus();
-                        } else {
-                            dom.apiKeyInput.focus();
-                        }
-                    }
+            rec.onerror = function(event) {
+                console.error('Ошибка распознавания речи:', event.error);
+                stopListening();
+                // Показываем ошибку в чате
+                const errDiv = document.createElement('div');
+                errDiv.className = 'message-ai';
+                errDiv.textContent = '⚠️ Ошибка распознавания речи: ' + event.error;
+                errDiv.style.color = '#ff5555';
+                messagesContainer.appendChild(errDiv);
+                scrollToBottom();
+            };
+
+            rec.onend = function() {
+                stopListening();
+            };
+
+            return rec;
+        }
+
+        /**
+         * Запускает прослушивание речи
+         */
+        function startListening() {
+            if (isListening) return;
+            if (!recognition) {
+                recognition = initSpeechRecognition();
+                if (!recognition) return;
+            }
+
+            isListening = true;
+            micButton.classList.add('listening');
+            try {
+                recognition.start();
+            } catch (e) {
+                console.warn('Повторный запуск распознавания:', e);
+            }
+        }
+
+        /**
+         * Останавливает прослушивание речи
+         */
+        function stopListening() {
+            isListening = false;
+            micButton.classList.remove('listening');
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    // Игнорируем ошибки остановки
+                }
+            }
+        }
+
+        /**
+         * Переключает голосовой ввод
+         */
+        function toggleListening() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+
+        // ============================================================
+        // 9. ОБРАБОТКА СОБЫТИЙ КЛАВИАТУРЫ (D-PAD И КЛАВИШИ)
+        // ============================================================
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            const keyCode = event.keyCode || event.which;
+
+            // Клавиша "5" — переключение сайдбара (всегда активно)
+            if (key === '5' || keyCode === 53) {
+                // Если модальное окно открыто, не переключаем сайдбар
+                if (!modalActive) {
+                    event.preventDefault();
+                    toggleSidebar();
                     return;
                 }
+            }
 
-                // Обычная навигация
-                e.preventDefault();
-
-                // Собираем элементы, если ещё не собраны
-                if (!state.focusableElements.length) collectFocusableElements();
-
-                const currentEl = document.activeElement;
-                const currentIndex = state.focusableElements.indexOf(currentEl);
-                let newIndex = currentIndex;
-
+            // В модальном окне — специальная обработка
+            if (modalActive) {
                 switch (key) {
                     case 'ArrowUp':
                     case 'ArrowLeft':
-                        newIndex = currentIndex - 1;
+                        event.preventDefault();
+                        focusPrev();
                         break;
                     case 'ArrowDown':
                     case 'ArrowRight':
-                        newIndex = currentIndex + 1;
+                        event.preventDefault();
+                        focusNext();
                         break;
                     case 'Enter':
-                        // Если фокус на кнопке микрофона — запускаем голос
-                        if (currentEl === dom.micButton) {
-                            toggleVoiceInput();
-                        } else if (currentEl === dom.modelCard) {
-                            cycleModel(1); // клик по карточке — следующая модель
-                        } else if (currentEl === dom.textInput) {
-                            // Отправка сообщения
-                            sendTextMessage();
+                        event.preventDefault();
+                        // Активируем текущий фокусируемый элемент
+                        if (currentFocusIndex === 0) {
+                            // Фокус на поле ввода — переходим к кнопке
+                            focusNext();
+                        } else if (currentFocusIndex === 1) {
+                            // Фокус на кнопке — отправляем ключ
+                            handleApiKeySubmit();
                         }
-                        return;
+                        break;
+                    case 'Escape':
+                        event.preventDefault();
+                        hideModal();
+                        break;
                 }
-
-                if (newIndex >= 0 && newIndex < state.focusableElements.length) {
-                    focusElement(newIndex);
-                } else if (newIndex < 0) {
-                    focusElement(state.focusableElements.length - 1);
-                } else {
-                    focusElement(0);
-                }
+                return;
             }
 
-            /* ============================
-               ОТПРАВКА СООБЩЕНИЙ И ЗАПРОС К API
-            ============================ */
-            // Функция добавления сообщения в чат
-            function addMessageToChat(text, sender = 'user') {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `message ${sender}`;
-                msgDiv.textContent = text;
-                dom.chatOutput.appendChild(msgDiv);
-                scrollChatToBottom();
-                return msgDiv;
+            // Обычный режим — D-pad навигация
+            switch (key) {
+                case 'ArrowUp':
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    focusPrev();
+                    break;
+                case 'ArrowDown':
+                case 'ArrowRight':
+                    event.preventDefault();
+                    focusNext();
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    handleEnterOnFocusedElement();
+                    break;
+                case 'Escape':
+                    // Escape снимает фокус с текущего элемента
+                    event.preventDefault();
+                    focusableElements.forEach(el => el.classList.remove('focused'));
+                    break;
             }
+        });
 
-            // Прокрутка чата вниз
-            function scrollChatToBottom() {
-                dom.chatOutput.scrollTop = dom.chatOutput.scrollHeight;
+        /**
+         * Обрабатывает нажатие Enter на текущем фокусируемом элементе
+         */
+        function handleEnterOnFocusedElement() {
+            if (focusableElements.length === 0) return;
+            const focusedEl = focusableElements[currentFocusIndex];
+
+            if (focusedEl === modelCard) {
+                // Переключение модели
+                cycleModel();
+            } else if (focusedEl === chatInput) {
+                // Отправка сообщения
+                sendUserMessage();
+            } else if (focusedEl === micButton) {
+                // Голосовой ввод
+                toggleListening();
+            } else if (focusedEl === apiKeyBtn) {
+                // Открытие модального окна для смены ключа
+                showModal();
+            } else if (focusedEl === modalApiInput) {
+                // В модальном окне — переходим к кнопке
+                focusNext();
+            } else if (focusedEl === modalSubmitBtn) {
+                // Отправка API-ключа
+                handleApiKeySubmit();
             }
+        }
 
-            // Эффект печатной машинки для AI-ответа
-            function typeWriterEffect(element, fullText, speed = 25) {
-                return new Promise((resolve) => {
-                    let index = 0;
-                    element.textContent = '';
-                    function type() {
-                        if (index < fullText.length) {
-                            element.textContent += fullText.charAt(index);
-                            index++;
-                            scrollChatToBottom();
-                            setTimeout(type, speed);
-                        } else {
-                            resolve();
-                        }
-                    }
-                    type();
-                });
+        // ============================================================
+        // 10. КЛИКИ МЫШЬЮ (ДЛЯ УДОБСТВА ТЕСТИРОВАНИЯ НА ПК)
+        // ============================================================
+        modelCard.addEventListener('click', function() {
+            cycleModel();
+        });
+
+        apiKeyBtn.addEventListener('click', function() {
+            showModal();
+        });
+
+        micButton.addEventListener('click', function() {
+            toggleListening();
+        });
+
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendUserMessage();
             }
+        });
 
-            // Показать/скрыть анимацию ожидания
-            function showThinking(show) {
-                if (show) {
-                    dom.thinkingOverlay.classList.add('active');
-                    state.isThinking = true;
-                } else {
-                    dom.thinkingOverlay.classList.remove('active');
-                    state.isThinking = false;
-                }
+        modalSubmitBtn.addEventListener('click', function() {
+            handleApiKeySubmit();
+        });
+
+        modalApiInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleApiKeySubmit();
             }
+        });
 
-            // Отправка текстового запроса к API VoidAI
-            async function sendTextMessage() {
-                const userText = dom.textInput.value.trim();
-                if (!userText) return;
-                if (!state.apiKey) {
-                    // Если ключа нет, просим ввести
-                    openModal();
-                    return;
-                }
-
-                // Добавляем сообщение пользователя
-                addMessageToChat(userText, 'user');
-                dom.textInput.value = '';
-                scrollChatToBottom();
-
-                // Показываем анимацию
-                showThinking(true);
-
-                try {
-                    const model = CONFIG.MODELS[state.currentModelIndex];
-                    const response = await fetch(CONFIG.API_ENDPOINT, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${state.apiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: model.id,
-                            messages: [{ role: 'user', content: userText }],
-                            stream: false, // упрощённо без стриминга
-                            temperature: 0.7,
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errData = await response.json().catch(() => ({}));
-                        throw new Error(errData.error?.message || `Ошибка ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    const aiText = data.choices?.[0]?.message?.content || 'Пустой ответ от модели';
-
-                    // Скрываем анимацию и выводим текст с эффектом печатной машинки
-                    showThinking(false);
-                    const aiMsgDiv = addMessageToChat('', 'ai');
-                    await typeWriterEffect(aiMsgDiv, aiText, 20);
-
-                } catch (error) {
-                    showThinking(false);
-                    addMessageToChat(`⚠️ Ошибка: ${error.message}`, 'ai');
-                }
+        // Закрытие модального окна по клику на фон
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === modalOverlay) {
+                hideModal();
             }
+        });
 
-            // Отправка голосового сообщения (текст приходит из распознавания)
-            async function sendVoiceMessage(voiceText) {
-                if (!voiceText) return;
-                addMessageToChat(voiceText, 'user');
-                dom.textInput.value = '';
-                scrollChatToBottom();
+        // ============================================================
+        // 11. ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+        // ============================================================
+        async function initApp() {
+            console.log('HydroAI 1.0 — инициализация...');
 
-                showThinking(true);
-                try {
-                    const model = CONFIG.MODELS[state.currentModelIndex];
-                    const response = await fetch(CONFIG.API_ENDPOINT, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${state.apiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: model.id,
-                            messages: [{ role: 'user', content: voiceText }],
-                            stream: false,
-                            temperature: 0.7,
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errData = await response.json().catch(() => ({}));
-                        throw new Error(errData.error?.message || `Ошибка ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    const aiText = data.choices?.[0]?.message?.content || 'Пустой ответ';
-
-                    showThinking(false);
-                    const aiMsgDiv = addMessageToChat('', 'ai');
-                    await typeWriterEffect(aiMsgDiv, aiText, 20);
-
-                } catch (error) {
-                    showThinking(false);
-                    addMessageToChat(`⚠️ Ошибка: ${error.message}`, 'ai');
-                }
-            }
-
-            /* ============================
-               ГОЛОСОВОЙ ВВОД (Web Speech API)
-            ============================ */
-            function initSpeechRecognition() {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) {
-                    console.warn('Web Speech API не поддерживается');
-                    return null;
-                }
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'ru-RU';
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.maxAlternatives = 1;
-
-                recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    stopRecordingUI();
-                    if (transcript.trim()) {
-                        sendVoiceMessage(transcript.trim());
-                    }
-                };
-
-                recognition.onerror = (event) => {
-                    console.error('Ошибка распознавания:', event.error);
-                    stopRecordingUI();
-                    if (event.error === 'not-allowed') {
-                        addMessageToChat('Доступ к микрофону запрещён.', 'ai');
-                    }
-                };
-
-                recognition.onend = () => {
-                    stopRecordingUI();
-                };
-
-                return recognition;
-            }
-
-            function startRecordingUI() {
-                state.isRecording = true;
-                dom.micButton.classList.add('recording');
-            }
-
-            function stopRecordingUI() {
-                state.isRecording = false;
-                dom.micButton.classList.remove('recording');
-            }
-
-            function toggleVoiceInput() {
-                if (state.isRecording) {
-                    if (state.recognition) {
-                        state.recognition.stop();
-                    }
-                    stopRecordingUI();
-                    return;
-                }
-
-                if (!state.recognition) {
-                    state.recognition = initSpeechRecognition();
-                    if (!state.recognition) {
-                        addMessageToChat('Распознавание речи недоступно в этом браузере.', 'ai');
-                        return;
-                    }
-                }
-
-                // Проверка ключа
-                if (!state.apiKey) {
-                    openModal();
-                    return;
-                }
-
-                try {
-                    startRecordingUI();
-                    state.recognition.start();
-                } catch (e) {
-                    console.warn('Не удалось запустить распознавание:', e);
-                    stopRecordingUI();
-                }
-            }
-
-            /* ============================
-               МОДАЛЬНОЕ ОКНО API-КЛЮЧА
-            ============================ */
-            function openModal() {
-                dom.modalOverlay.style.display = 'flex';
-                dom.apiKeyInput.value = '';
-                setTimeout(() => dom.apiKeyInput.focus(), 100);
-                collectFocusableElements();
-            }
-
-            function closeModal() {
-                dom.modalOverlay.style.display = 'none';
-                // Возвращаем фокус основному приложению
-                if (state.focusableElements.length) {
-                    focusElement(0);
-                } else {
-                    dom.modelCard.focus();
-                }
-            }
-
-            async function submitApiKey() {
-                const key = dom.apiKeyInput.value.trim();
-                if (!key) {
-                    dom.apiKeyInput.focus();
-                    return;
-                }
-
-                // Получаем IP и сохраняем
-                const ip = state.userIP || await fetchUserIP();
-                saveApiKey(ip, key);
-                closeModal();
-                addMessageToChat('API-ключ сохранён. Можно задавать вопросы!', 'ai');
-            }
-
-            /* ============================
-               ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
-            ============================ */
-            async function initApp() {
-                // 1. Получаем IP
-                state.userIP = await fetchUserIP();
-
-                // 2. Пытаемся загрузить ключ по IP
-                const keyLoaded = loadApiKeyForIP(state.userIP);
-
-                if (!keyLoaded) {
-                    // Если ключа нет, показываем модальное окно
-                    openModal();
-                } else {
-                    addMessageToChat('API-ключ загружен автоматически. Готово к работе!', 'ai');
-                }
-
-                // 3. Устанавливаем модель по умолчанию
-                setModelByIndex(0);
-                updateModelUI();
-
-                // 4. Собираем фокусируемые элементы
-                collectFocusableElements();
-                // Устанавливаем начальный фокус на карточку модели
-                setTimeout(() => {
-                    dom.modelCard.focus();
-                    state.currentFocusIndex = state.focusableElements.indexOf(dom.modelCard);
-                }, 200);
-
-                // 5. Глобальный слушатель клавиш для D-pad
-                document.addEventListener('keydown', handleDPadNavigation);
-
-                // 6. Клики для touch/мыши (опционально)
-                dom.modelCard.addEventListener('click', () => {
-                    cycleModel(1);
-                });
-
-                dom.micButton.addEventListener('click', () => {
-                    toggleVoiceInput();
-                });
-
-                dom.textInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        sendTextMessage();
-                    }
-                });
-
-                dom.modalSubmit.addEventListener('click', submitApiKey);
-                dom.apiKeyInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        submitApiKey();
-                    }
-                });
-
-                // Закрытие модального окна по клику на оверлей (только если клик вне контента)
-                dom.modalOverlay.addEventListener('click', (e) => {
-                    if (e.target === dom.modalOverlay) {
-                        // Не закрываем, если нет ключа? Но можно закрыть, но тогда не будет доступа.
-                        // Лучше не закрывать, чтобы пользователь ввёл ключ.
-                    }
-                });
-
-                // Если есть ключ, можно скрыть модалку
-                if (keyLoaded) {
-                    dom.modalOverlay.style.display = 'none';
-                }
-            }
-
-            // Запуск после загрузки DOM
-            window.addEventListener('DOMContentLoaded', initApp);
-
-            // Предотвращение случайного submit
-            window.addEventListener('submit', (e) => e.preventDefault());
-
-            // Переопределение сбора фокуса при изменении модального окна
-            const originalOpen = openModal;
-            openModal = function() {
-                originalOpen();
-                collectFocusableElements();
-                state.currentFocusIndex = 0;
-                setTimeout(() => {
-                    if (dom.apiKeyInput) dom.apiKeyInput.focus();
-                }, 50);
+            // Устанавливаем первую модель
+            const firstModel = MODELS[0];
+            modelName.textContent = firstModel.displayName;
+            modelDescription.textContent = firstModel.description;
+            modelLogo.src = firstModel.logo;
+            modelLogo.alt = 'Логотип ' + firstModel.displayName;
+            modelLogo.onerror = function() {
+                this.src = firstModel.fallbackLogo;
+                this.onerror = null;
             };
 
-            // Экспорт функций для отладки (необязательно)
-            window.hydroAI = {
-                setModelByIndex,
-                cycleModel,
-                openModal,
-                closeModal,
-                sendTextMessage,
-                toggleVoiceInput,
-            };
+            // Инициализируем распознавание речи
+            recognition = initSpeechRecognition();
 
-        })();
-    </script>
+            // Проверяем авторизацию (IP + API-ключ)
+            const isAuthorized = await initAuth();
+
+            if (isAuthorized) {
+                console.log('HydroAI готов к работе.');
+                // Добавляем приветственное сообщение
+                const welcomeMsg = document.createElement('div');
+                welcomeMsg.className = 'message-ai';
+                welcomeMsg.textContent = '👋 Добро пожаловать в HydroAI! Выберите модель в боковой панели и задайте вопрос.';
+                messagesContainer.appendChild(welcomeMsg);
+                scrollToBottom();
+            }
+
+            // Обновляем фокусируемые элементы и устанавливаем фокус
+            updateFocusableElements();
+            applyFocus(0);
+        }
+
+        // Запускаем приложение после полной загрузки DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+
+        // ============================================================
+        // 12. ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА ОКНА
+        // ============================================================
+        window.addEventListener('resize', function() {
+            updateFocusableElements();
+        });
+
+        // ============================================================
+        // 13. ОБРАБОТКА ВИДИМОСТИ (ПРИ СВОРАЧИВАНИИ/РАЗВОРАЧИВАНИИ ВКЛАДКИ)
+        // ============================================================
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isListening) {
+                stopListening();
+            }
+        });
+
+        console.log('HydroAI 1.0 загружен. Нажмите "5" для переключения сайдбара.');
+    })();
+</script>
 </body>
 </html>
