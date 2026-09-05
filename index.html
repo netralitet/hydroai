@@ -941,7 +941,7 @@
         class="modal-input focusable"
         id="modalApiInput"
         tabindex="0"
-        placeholder="sk-..."
+        placeholder="sk-... или https://example.com/key.txt"
         autocomplete="off"
         aria-label="API-ключ"
         >
@@ -1255,24 +1255,43 @@ JAVASCRIPT — ВСЯ ЛОГИКА ПРИЛОЖЕНИЯ
         /**
          * Обрабатывает отправку API-ключа из модального окна
          */
-        function handleApiKeySubmit() {
-            const enteredKey = modalApiInput.value.trim();
-            if (!enteredKey || enteredKey.length < 5) {
-                modalError.textContent = 'Введите корректный API-ключ (минимум 5 символов)';
-                return;
-            }
-            if (!enteredKey.startsWith('sk-') && !enteredKey.startsWith('ds-') && !enteredKey.startsWith(
-                    'voidai-')) {
-                // Не критично, но предупредим
-                console.warn('Ключ может быть некорректным, но продолжим');
-            }
+        async function handleApiKeySubmit() {
+    const enteredValue = modalApiInput.value.trim();
+    if (!enteredValue) {
+        modalError.textContent = 'Введите ключ или URL .txt файла';
+        return;
+    }
 
-            apiKey = enteredKey;
-            saveApiKeyForIP(userIP, apiKey);
-            modalError.textContent = '';
-            hideModal();
-            console.log('API-ключ сохранён для IP:', userIP);
+    let keyCandidate = enteredValue;
+
+    // Проверяем, является ли ввод URL (http/https)
+    if (/^https?:\/\//i.test(enteredValue)) {
+        modalError.textContent = 'Загрузка ключа из URL...';
+        try {
+            const response = await fetch(enteredValue, { method: 'GET' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const text = await response.text();
+            keyCandidate = text.trim();
+            // Убираем возможные лишние символы (пробелы, переводы строк)
+            keyCandidate = keyCandidate.replace(/[\r\n]+/g, '').trim();
+            if (!keyCandidate) throw new Error('Файл пуст или не содержит ключ');
+        } catch (error) {
+            modalError.textContent = 'Ошибка загрузки: ' + error.message;
+            return;
         }
+    }
+
+    if (keyCandidate.length < 5) {
+        modalError.textContent = 'Ключ слишком короткий (минимум 5 символов)';
+        return;
+    }
+
+    apiKey = keyCandidate;
+    saveApiKeyForIP(userIP, apiKey);
+    modalError.textContent = '';
+    hideModal();
+    console.log('API-ключ сохранён для IP:', userIP);
+}
 
         // ============================================================
         // 7. ОТПРАВКА СООБЩЕНИЙ И ВЗАИМОДЕЙСТВИЕ С API
